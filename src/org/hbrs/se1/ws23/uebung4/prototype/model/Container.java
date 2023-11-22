@@ -1,8 +1,11 @@
-package org.hbrs.se1.ws23.uebung4.prototype.improvements.controller;
+package org.hbrs.se1.ws23.uebung4.prototype.model;
+
+import org.hbrs.se1.ws23.uebung4.prototype.control.UserStory;
+import org.hbrs.se1.ws23.uebung4.prototype.control.Util;
+import org.hbrs.se1.ws23.uebung4.prototype.model.exception.ContainerException;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /*
  * Klasse zum Management sowie zur Eingabe unnd Ausgabe von User-Stories.
@@ -15,16 +18,20 @@ import java.util.stream.Collectors;
  * - Anpassen des Generic in der List-Klasse (ALT: Member, NEU: UserStory)
  * - Anpassen der Methodennamen
  *
- * (Was ist ihre Strategie zur Wiederverwendung?)
+ * ToDo: Was ist ihre Strategie zur Wiederverwendung? (F1)
  *
+ * Alternative 1:
  * Klasse UserStory implementiert Interface Member (UserStory implements Member)
  * Vorteil: Wiederverwendung von Member, ID verwenden; Strenge Implementierung gegen Interface
  * Nachteil: Viele Casts notwendig, um auf die anderen Methoden zuzugreifen
  *
- * Alternative: Container mit Generic entwickeln (z.B. Container<E>))
+ * Alternative 2:
+ * Container mit Generic entwickeln (z.B. Container<E>))
  *
- * Achtung: eine weitere Aufteilung dieser Klasse ist notwendig (siehe F2, vgl auch Klassendiagramm für 4-2)
- * 
+ * Entwurfsentscheidung: Die wichtigsten Zuständigkeiten (responsibilities) sind in einer Klasse, d.h. Container,
+ * diese liegt in einem Package.
+ * ToDo: Wie bewerten Sie diese Entscheidung? (F2, F6)
+ * Schlecht, da hier zu viele Zuständigkeiten vorhanden sind. Hierbei kann es schnell unübersichtlich werden
  */
 
 public class Container {
@@ -34,9 +41,14 @@ public class Container {
 	
 	// Statische Klassen-Variable, um die Referenz
 	// auf das einzige Container-Objekt abzuspeichern
-	// Diese Variante sei thread-safe, so hat Hr. P. es gehört... stimmt das? --> Richtig!
-	// Nachteil: ggf. geringer Speicherbedarf, da Singleton zu Programmstart schon erzeugt
-	// --> Falsch, es besteht direkt ein hoher Speicherbedarf!
+	// Diese Variante sei thread-safe, so hat Hr. P. es gehört... stimmt das?
+	// Todo: Bewertung Thread-Safeness (F1)
+	// Nach Änderungen "synchronized" Threadsafe. Dadurch aber ein hoher Speicheraufwand
+	// Nachteil: ggf. geringer Speicherbedarf, da Singleton zu Programmstart schon erzeugt wird
+	// Todo: Bewertung Speicherbedarf (F1)
+	// hoher Speicherbedarf, da Container automatisch schon erstellt, egal ob benutzt oder nicht.
+	// Singleton -> hoher Speicherbedarf
+	// Vorteil: Threadsafe. Dementsprechend aber auch ein hoher Speicheraufwand
 	private static Container instance = new Container();
 	
 	// URL der Datei, in der die Objekte gespeichert werden 
@@ -46,9 +58,7 @@ public class Container {
 	 * Liefert ein Singleton zurück.
 	 * @return
 	 */
-	public static Container getInstance() {
-		return instance;
-	}
+	public static synchronized Container getInstance() {return instance; }
 	
 	/**
 	 * Vorschriftsmäßiges Ueberschreiben des Konstruktors (private) gemaess Singleton-Pattern (oder?)
@@ -62,87 +72,20 @@ public class Container {
 	 * Start-Methoden zum Starten des Programms 
 	 * (hier koennen ggf. weitere Initialisierungsarbeiten gemacht werden spaeter)
 	 */
-	public static void main (String[] args) throws Exception {
-		Container con = Container.getInstance();
-		con.startEingabe(); 
-	}
+
 	
 	/*
 	 * Diese Methode realisiert eine Eingabe ueber einen Scanner
 	 * Alle Exceptions werden an den aufrufenden Context (hier: main) weitergegeben (throws)
 	 * Das entlastet den Entwickler zur Entwicklungszeit und den Endanwender zur Laufzeit
 	 */
-	public void startEingabe() throws ContainerException, Exception {
-		String strInput = null;
-		
-		// Initialisierung des Eingabe-View
-		Scanner scanner = new Scanner( System.in );
-
-		while ( true ) {
-			// Ausgabe eines Texts zur Begruessung
-			System.out.println("UserStory-Tool V1.0 by Julius P. (dedicated to all my friends)");
-
-			System.out.print( "> "  );
-			strInput = scanner.nextLine();
-		
-			// Extrahiert ein Array aus der Eingabe
-			String[] strings = strInput.split(" ");
-
-			// 	Falls 'help' eingegeben wurde, werden alle Befehle ausgedruckt
-			if ( strings[0].equals("help") ) {
-				System.out.println("Folgende Befehle stehen zur Verfuegung: help, dump....");
-			}
-			// Auswahl der bisher implementierten Befehle:
-			if ( strings[0].equals("dump") ) {
-				startAusgabe();
-			}
-			// Auswahl der bisher implementierten Befehle:
-			if ( strings[0].equals("enter") ) {
-				// Daten einlesen ...
-				// this.addUserStory( new UserStory( data ) ) um das Objekt in die Liste einzufügen.
-			}
-								
-			if (  strings[0].equals("store")  ) {
-				// Beispiel-Code
-				UserStory userStory = new UserStory();
-				userStory.setId(22);
-				this.addUserStory( userStory );
-				this.store();
-			}
-		} // Ende der Schleife
-	}
-
-	/**
-	 * Diese Methode realisiert die Ausgabe.
-	 */
-	public void startAusgabe() {
-
-		// Hier möchte Herr P. die Liste mit einem eigenen Sortieralgorithmus sortieren und dann
-		// ausgeben. Allerdings weiss der Student hier nicht weiter
-
-		// [Sortierung ausgelassen]
-		Collections.sort( this.liste );
-
-		// Klassische Ausgabe ueber eine For-Each-Schleife
-		for (UserStory story : liste) {
-			System.out.println(story.toString());
-		}
-
-		// [Variante mit forEach-Methode / Streams (--> Kapitel 9, Lösung Übung Nr. 2)?
-		//  Gerne auch mit Beachtung der neuen US1
-		// (Filterung Projekt = "ein Wert (z.B. Coll@HBRS)" und Risiko >=5
-		List<UserStory> reduzierteListe = this.liste.stream()
-				.filter( story -> story.getProject().equals("Coll@HBRS") )
-				.filter(  story -> story.getRisk()  >= 5 )
-				.collect( Collectors.toList() );
-	}
 
 	/*
 	 * Methode zum Speichern der Liste. Es wird die komplette Liste
 	 * inklusive ihrer gespeicherten UserStory-Objekte gespeichert.
 	 * 
 	 */
-	private void store() throws ContainerException {
+	void store() throws ContainerException {
 		ObjectOutputStream oos = null;
 		FileOutputStream fos = null;
 		try {
@@ -197,7 +140,7 @@ public class Container {
 	 * @throws ContainerException
 	 */
 	public void addUserStory ( UserStory userStory ) throws ContainerException {
-		if ( contains(userStory) == true ) {
+		if ( Util.contains(userStory) == true ) {
 			ContainerException ex = new ContainerException("ID bereits vorhanden!");
 			throw ex;
 		}
@@ -209,15 +152,7 @@ public class Container {
 	 * @param userStory
 	 * @return
 	 */
-	private boolean contains( UserStory userStory ) {
-		int ID = userStory.getId();
-		for ( UserStory userStory1 : liste) {
-			if ( userStory1.getId() == ID ) {
-				return true;
-			}
-		}
-		return false;
-	}
+
 
 	/**
 	 * Ermittlung der Anzahl von internen UserStory
@@ -228,26 +163,8 @@ public class Container {
 		return liste.size();
 	}
 
-	/**
-	 * Methode zur Rückgabe der aktuellen Liste mit Stories
-	 * Findet aktuell keine Anwendung bei Hr. P.
-	 * @return
-	 */
 	public List<UserStory> getCurrentList() {
 		return this.liste;
 	}
 
-	/**
-	 * Liefert eine bestimmte UserStory zurück
-	 * @param id
-	 * @return
-	 */
-	private UserStory getUserStory(int id) {
-		for ( UserStory userStory : liste) {
-			if (id == userStory.getId() ){
-				return userStory;
-			}
-		}
-		return null;
-	}
 }
